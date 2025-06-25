@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Fluid Dynamics Capital Flow Simulator",
+  "description": "A React web application that simulates capital movement between market sectors using fluid dynamics principles. Visualizes capital distribution and logs significant market events.",
+  "requestFramePermissions": []
+}
