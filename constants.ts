@@ -1,124 +1,205 @@
-
-import { GameState, Sector, SimulationEvent, SimulationSpeed } from './types';
-
-// export const TICK_RATE = 1000 / 60; // Approx 60 FPS - Replaced by SIMULATION_SPEEDS
+import {
+  MarketEdgeDefinition,
+  MarketNodeDefinition,
+  ModelParams,
+  Scenario,
+  SimulationSpeed,
+} from './types';
 
 export const SIMULATION_SPEEDS: Record<SimulationSpeed, number> = {
-  slow: 200,    // Milliseconds per tick
-  middle: 100,
-  fast: 50,
+  slow: 480,
+  middle: 180,
+  fast: 60,
 };
+
 export const DEFAULT_SIMULATION_SPEED: SimulationSpeed = 'middle';
-export const START_YEAR = 1925; 
 
-
-export const SIMULATION_PARAMS = {
-  PRESSURE_COEFFICIENT: 0.005, 
-  FRICTION_COEFFICIENT: 0.05,  
-  EXTERNAL_FORCE_DECAY: 0.95, 
+export const DEFAULT_PARAMS: ModelParams = {
+  dt: 0.16,
+  pressureSensitivity: 0.72,
+  crowdingElasticity: 0.9,
+  baseViscosity: 0.24,
+  viscosityEndogeneity: 0.55,
+  transactionFriction: 0.16,
+  nonlinearAdvection: 0.28,
+  networkDiffusion: 0.2,
+  externalForceSensitivity: 0.8,
+  shockDecay: 0.075,
+  shockScale: 1,
+  hawkesBaseline: 0.025,
+  hawkesExcitation: 0.22,
+  hawkesDecay: 0.48,
+  leverageAmplification: 0.42,
+  policyBackstop: 0.32,
+  capitalControls: 0.08,
+  stochasticVolatility: 0.018,
+  flowScale: 38,
 };
 
-export const INITIAL_SECTORS_DATA: Sector[] = [
-  { id: 'tech', name: '기술주', capital: 800, pressure: 0, external_force: 0 }, 
-  { id: 'finance', name: '금융주', capital: 1200, pressure: 0, external_force: 0 },
-  { id: 'healthcare', name: '헬스케어', capital: 600, pressure: 0, external_force: 0 },
-  { id: 'value', name: '가치주', capital: 1500, pressure: 0, external_force: 0 },
-  { id: 'emerging', name: '신흥 시장', capital: 400, pressure: 0, external_force: 0 },
-  { id: 'renewable', name: '신재생에너지', capital: 200, pressure: 0, external_force: 0 },
-  { id: 'realestate', name: '부동산', capital: 1000, pressure: 0, external_force: 0 },
-  { id: 'consumerd', name: '소비재', capital: 1300, pressure: 0, external_force: 0 },
-  { id: 'industrials', name: '산업재', capital: 1800, pressure: 0, external_force: 0 },
-  { id: 'commodities', name: '원자재', capital: 700, pressure: 0, external_force: 0 },
+export const MARKET_NODES: MarketNodeDefinition[] = [
+  {
+    id: 'equity', name: '한국 주식', shortName: 'K-Equity', color: '#49d6ff', capital: 1_500,
+    liquidityDepth: 0.86, position: [-2.5, 1.3, 0.3], policyWeight: 0.8, domestic: true,
+    description: 'KOSPI·KOSDAQ 및 외국인 주식 포지션',
+  },
+  {
+    id: 'bonds', name: '국채·회사채', shortName: 'Bonds', color: '#7d8cff', capital: 1_650,
+    liquidityDepth: 0.94, position: [-0.7, 2.3, -0.8], policyWeight: 0.9, domestic: true,
+    description: '원화 채권과 금리 듀레이션 익스포저',
+  },
+  {
+    id: 'krw', name: '원화·FX 스왑', shortName: 'KRW / FX', color: '#d879ff', capital: 900,
+    liquidityDepth: 0.72, position: [1.5, 1.7, 0.6], policyWeight: 0.85, domestic: true,
+    description: '원화 현물·선물환·FX 스왑 펀딩',
+  },
+  {
+    id: 'banks', name: '은행 신용', shortName: 'Banks', color: '#49e6b3', capital: 1_450,
+    liquidityDepth: 0.8, position: [-2.0, -0.7, -0.8], policyWeight: 1, domestic: true,
+    description: '은행 대차대조표와 신용 중개',
+  },
+  {
+    id: 'nbfi', name: '비은행 금융', shortName: 'NBFI', color: '#ffb54a', capital: 1_050,
+    liquidityDepth: 0.58, position: [0.1, -1.3, 1.2], policyWeight: 0.55, domestic: true,
+    description: '펀드·보험·연기금·레버리지 중개',
+  },
+  {
+    id: 'realAssets', name: '부동산·실물', shortName: 'Real assets', color: '#ff6f91', capital: 1_250,
+    liquidityDepth: 0.4, position: [2.4, -0.4, -0.7], policyWeight: 0.35, domestic: true,
+    description: '부동산·원자재·비유동성 위험자산',
+  },
+  {
+    id: 'globalDollar', name: '글로벌 달러', shortName: 'Global USD', color: '#ffd166', capital: 1_700,
+    liquidityDepth: 1.12, position: [2.2, 0.5, 2.7], policyWeight: 0.05, domestic: false,
+    description: '글로벌 달러 유동성과 안전자산 수요',
+  },
+  {
+    id: 'reserves', name: '현금·외환보유액', shortName: 'Reserves', color: '#a9b9ca', capital: 1_000,
+    liquidityDepth: 1.25, position: [-0.9, 0.0, -2.8], policyWeight: 0.2, domestic: false,
+    description: '대기 자금·외환보유액·정책 완충재',
+  },
 ];
 
-// Time unit: 1 = 1 quarter. Year YYYY = (YYYY-START_YEAR) * 4
-// START_YEAR is 1925
-// Importance: 1 (Major), 2 (Secondary), 3 (Tertiary/Contextual)
-export const HISTORICAL_EVENTS: SimulationEvent[] = [
-  // --- Early 20th Century & Great Depression ---
-  { time: (1928-START_YEAR)*4, name: "대공황 전조: 플로리다 부동산 버블 붕괴 영향 지속", target: 'realestate', force: -30, duration: 4, importance: 3 },
-  { time: (1929-START_YEAR)*4, name: "대공황 시작: 주식 시장 대붕괴 (검은 목요일)", target: 'finance', force: -150, duration: 8, importance: 1 }, 
-  { time: (1929-START_YEAR)*4, name: "대공황 시작: 산업 생산 급감", target: 'industrials', force: -100, duration: 12, importance: 1 }, 
-  { time: (1929-START_YEAR)*4 + 2, name: "대공황 확산: 원자재 가격 폭락", target: 'commodities', force: -80, duration: 16, importance: 2 }, 
-  { time: (1930-START_YEAR)*4, name: "대공황 심화: 은행 파산 연쇄", target: 'finance', force: -70, duration: 8, importance: 1 },
-  { time: (1933-START_YEAR)*4, name: "뉴딜 정책 시작: 정부 주도 산업 부양 시도", target: 'industrials', force: 60, duration: 20, importance: 2 }, 
-  { time: (1933-START_YEAR)*4, name: "뉴딜 정책: 긴급 은행법 및 금융 안정화 조치", target: 'finance', force: 40, duration: 12, importance: 2 },
-  { time: (1933-START_YEAR)*4 + 2, name: "뉴딜 정책 효과: 소비 심리 일부 회복", target: 'consumerd', force: 30, duration: 16, importance: 3 },
-
-  // --- WWII & Post-War Boom ---
-  { time: (1939-START_YEAR)*4, name: "제2차 세계대전 발발: 군수 산업 폭발적 성장", target: 'industrials', force: 200, duration: 24, importance: 1 }, 
-  { time: (1939-START_YEAR)*4, name: "제2차 세계대전: 원자재 수요 폭증", target: 'commodities', force: 100, duration: 24, importance: 2 }, 
-  { time: (1941-START_YEAR)*4 + 3, name: "진주만 공습: 미국 참전으로 전시 경제 가속", target: 'industrials', force: 50, duration: 16, importance: 1 }, // Added detail for US entry
-  { time: (1946-START_YEAR)*4, name: "전후 경제 호황 시작: 소비재 수요 폭발", target: 'consumerd', force: 80, duration: 60, importance: 2 }, 
-  { time: (1946-START_YEAR)*4, name: "전후 경제 호황: 주택 건설 붐과 부동산 시장 성장", target: 'realestate', force: 70, duration: 60, importance: 2 }, 
-  { time: (1946-START_YEAR)*4 + 4, name: "전후 경제 호황: 산업 설비 확장 및 다변화", target: 'industrials', force: 60, duration: 56, importance: 2 },
-  { time: (1950-START_YEAR)*4, name: "한국 전쟁 발발: 단기적 군수 특수", target: 'industrials', force: 40, duration: 12, importance: 3 },
-
-  // --- Mid to Late 20th Century ---
-  { time: (1965-START_YEAR)*4, name: "베트남 전쟁 확전: 국방비 지출 증가", target: 'industrials', force: 50, duration: 20, importance: 3 },
-  { time: (1971-START_YEAR)*4 + 2, name: "닉슨 쇼크 (금태환 정지): 브레튼우즈 체제 붕괴 신호", target: 'finance', force: -40, duration: 8, importance: 2 },
-  { time: (1973-START_YEAR)*4, name: "1차 석유 파동: 원유 가격 급등 쇼크", target: 'commodities', force: 150, duration: 8, importance: 1 }, 
-  { time: (1973-START_YEAR)*4, name: "1차 석유 파동: 스태그플레이션 시작 (산업 위축)", target: 'industrials', force: -70, duration: 12, importance: 2 }, 
-  { time: (1973-START_YEAR)*4, name: "1차 석유 파동: 소비 심리 급랭", target: 'consumerd', force: -60, duration: 10, importance: 2 }, 
-  { time: (1979-START_YEAR)*4, name: "2차 석유 파동: 이란 혁명 여파", target: 'commodities', force: 120, duration: 6, importance: 2 },
-  { time: (1980-START_YEAR)*4, name: "개인용 컴퓨터(PC) 혁명 시작: 초기 기술주 관심", target: 'tech', force: 50, duration: 40, importance: 2 }, 
-  { time: (1981-START_YEAR)*4, name: "레이거노믹스 시작: 규제 완화 및 감세 정책", target: 'finance', force: 30, duration: 20, importance: 3 },
-  { time: (1987-START_YEAR)*4 + 3, name: "블랙 먼데이: 주식 시장 대폭락", target: 'finance', force: -120, duration: 3, importance: 1 }, 
-  
-  // --- Dot-com Era ---
-  { time: (1993-START_YEAR)*4, name: "인터넷 브라우저 등장 (Mosaic): 기술주 관심 초기 증폭", target: 'tech', force: 20, duration: 8, importance: 3 },
-  { time: (1995-START_YEAR)*4, name: "닷컴 버블 형성기: 인터넷 기업 투자 열풍", target: 'tech', force: 100, duration: 20, importance: 2 }, 
-  { time: (1998-START_YEAR)*4, name: "러시아 금융위기 및 LTCM 파산: 신흥시장 및 금융 단기 충격", target: 'emerging', force: -50, duration: 4, importance: 3 },
-  { time: (2000-START_YEAR)*4, name: "닷컴 버블 붕괴 시작", target: 'tech', force: -180, duration: 8, importance: 1 }, 
-  { time: (2001-START_YEAR)*4, name: "닷컴 버블 붕괴 후: 가치주/전통산업으로 자본 이동", target: 'value', force: 70, duration: 10, importance: 2 }, 
-
-  // --- Early 21st Century ---
-  { time: (2001-START_YEAR)*4 + 2, name: "9/11 테러 공격: 금융 시장 및 항공/여행 산업 충격", target: 'finance', force: -80, duration: 3, importance: 1 }, 
-  { time: (2001-START_YEAR)*4 + 2, name: "9/11 테러 공격: 소비 심리 위축", target: 'consumerd', force: -60, duration: 4, importance: 2 }, 
-  { time: (2003-START_YEAR)*4, name: "미국의 이라크 침공: 지정학적 긴장 및 유가 변동성 증가", target: 'commodities', force: 30, duration: 8, importance: 3 },
-  { time: (2004-START_YEAR)*4, name: "서브프라임 모기지 시장 성장 및 초기 우려", target: 'realestate', force: 40, duration: 12, importance: 3 },
-  
-  // --- Global Financial Crisis & Aftermath ---
-  { time: (2007-START_YEAR)*4 + 2, name: "글로벌 금융위기 전조: 서브프라임 모기지 부실화 확산", target: 'finance', force: -60, duration: 4, importance: 2 },
-  { time: (2008-START_YEAR)*4 + 2, name: "글로벌 금융위기: 리먼 브라더스 파산 쇼크", target: 'finance', force: -200, duration: 8, importance: 1 }, 
-  { time: (2008-START_YEAR)*4 + 2, name: "글로벌 금융위기: 부동산 시장 급락", target: 'realestate', force: -150, duration: 12, importance: 1 }, 
-  { time: (2008-START_YEAR)*4 + 3, name: "글로벌 금융위기: 실물 경제 파급 (산업 위축)", target: 'industrials', force: -80, duration: 10, importance: 2 }, 
-  { time: (2009-START_YEAR)*4, name: "양적완화(QE1) 시작: 대규모 유동성 공급", target: 'finance', force: 60, duration: 16, importance: 2 },
-  { time: (2010-START_YEAR)*4, name: "빅테크(FAANG) 성장기 시작: 기술주 주도 장세", target: 'tech', force: 120, duration: 40, importance: 2 }, 
-  { time: (2010-START_YEAR)*4, name: "양적완화 지속: 금융시장 회복 및 저금리 기조", target: 'finance', force: 50, duration: 20, importance: 2 }, 
-  { time: (2014-START_YEAR)*4, name: "유가 하락: 셰일 오일 공급 증가 영향", target: 'commodities', force: -60, duration: 8, importance: 3 },
-
-  // --- COVID-19 Pandemic & Recent ---
-  { time: (2019-START_YEAR)*4 + 3, name: "코로나19 바이러스 첫 보고 (중국 우한)", target: 'healthcare', force: 10, duration: 2, importance: 3 },
-  { time: (2020-START_YEAR)*4, name: "코로나19 팬데믹 선언: 글로벌 증시 폭락", target: 'finance', force: -150, duration: 3, importance: 1 },
-  { time: (2020-START_YEAR)*4, name: "코로나19 팬데믹: 경제활동 중단 (소비 급감)", target: 'consumerd', force: -180, duration: 4, importance: 1 }, 
-  { time: (2020-START_YEAR)*4, name: "코로나19 팬데믹: 공급망 마비 (산업 타격)", target: 'industrials', force: -100, duration: 4, importance: 2 }, 
-  { time: (2020-START_YEAR)*4, name: "코로나19 팬데믹: 유가 폭락 (수요 증발)", target: 'commodities', force: -70, duration: 2, importance: 2 }, 
-  { time: (2020-START_YEAR)*4 + 1, name: "팬데믹 대응: 대규모 재정 부양책 및 통화 완화", target: 'finance', force: 100, duration: 8, importance: 1 },
-  { time: (2020-START_YEAR)*4 + 1, name: "팬데믹 특수: 비대면 기술주 및 바이오/헬스케어 급등 (기술주)", target: 'tech', force: 180, duration: 8, importance: 2 }, 
-  { time: (2020-START_YEAR)*4 + 1, name: "팬데믹 특수: 비대면 기술주 및 바이오/헬스케어 급등 (헬스케어)", target: 'healthcare', force: 100, duration: 8, importance: 2 }, 
-  { time: (2021-START_YEAR)*4, name: "백신 보급 및 경제 재개 기대감: 경기민감주 반등", target: 'consumerd', force: 70, duration: 8, importance: 2 },
-  { time: (2021-START_YEAR)*4, name: "공급망 병목 현상 및 인플레이션 압력 시작", target: 'commodities', force: 90, duration: 12, importance: 2 }, 
-  { time: (2021-START_YEAR)*4, name: "ESG 투자 트렌드 확산 (신재생에너지 관심 증대)", target: 'renewable', force: 80, duration: 12, importance: 3 },
-  { time: (2022-START_YEAR)*4, name: "러시아-우크라이나 전쟁 발발: 에너지/곡물 가격 급등", target: 'commodities', force: 120, duration: 6, importance: 1 },
-  { time: (2022-START_YEAR)*4, name: "주요국 금리 인상 시작: 인플레이션 대응", target: 'finance', force: -70, duration: 8, importance: 1 },
-  { time: (2023-START_YEAR)*4, name: "AI 기술 투자 붐 (Chat GPT 등)", target: 'tech', force: 150, duration: 8, importance: 2 },
-  { time: (2023-START_YEAR)*4 + 2, name: "미국 지역 은행 위기 (SVB 등)", target: 'finance', force: -50, duration: 3, importance: 3 },
-  { time: (2024-START_YEAR)*4, name: "지속되는 인플레이션과 고금리 환경", target: 'value', force: 30, duration: 6, importance: 3 }, // Duration: (2025 Q2 - 2024 Q1) = (401 - 396 + 1) = 6 quarters
+export const MARKET_EDGES: MarketEdgeDefinition[] = [
+  { id: 'equity-nbfi', source: 'equity', target: 'nbfi', capacity: 1.25, length: 1 },
+  { id: 'equity-dollar', source: 'equity', target: 'globalDollar', capacity: 1.35, length: 1.15, crossBorder: true },
+  { id: 'equity-reserves', source: 'equity', target: 'reserves', capacity: 0.75, length: 1.2 },
+  { id: 'bonds-banks', source: 'bonds', target: 'banks', capacity: 1.1, length: 1 },
+  { id: 'bonds-nbfi', source: 'bonds', target: 'nbfi', capacity: 1.2, length: 0.9 },
+  { id: 'bonds-dollar', source: 'bonds', target: 'globalDollar', capacity: 0.9, length: 1.2, crossBorder: true },
+  { id: 'krw-dollar', source: 'krw', target: 'globalDollar', capacity: 1.5, length: 0.75, crossBorder: true },
+  { id: 'krw-banks', source: 'krw', target: 'banks', capacity: 1.1, length: 0.9 },
+  { id: 'krw-reserves', source: 'krw', target: 'reserves', capacity: 1.15, length: 0.85 },
+  { id: 'banks-nbfi', source: 'banks', target: 'nbfi', capacity: 1.35, length: 0.8 },
+  { id: 'banks-real', source: 'banks', target: 'realAssets', capacity: 1.0, length: 1.05 },
+  { id: 'banks-reserves', source: 'banks', target: 'reserves', capacity: 0.95, length: 1 },
+  { id: 'nbfi-real', source: 'nbfi', target: 'realAssets', capacity: 1.15, length: 0.9 },
+  { id: 'nbfi-dollar', source: 'nbfi', target: 'globalDollar', capacity: 1.0, length: 1.1, crossBorder: true },
+  { id: 'real-reserves', source: 'realAssets', target: 'reserves', capacity: 0.55, length: 1.3 },
+  { id: 'dollar-reserves', source: 'globalDollar', target: 'reserves', capacity: 1.25, length: 0.9, crossBorder: true },
 ];
 
+export const SCENARIOS: Scenario[] = [
+  {
+    id: 'orderly-cycle', name: '질서 있는 글로벌 금융순환', period: '기준 경로', category: 'baseline',
+    summary: '약한 달러·완만한 위험선호 충격이 깊은 시장에서 소산되는 기준 사례입니다.',
+    researchQuestion: '낮은 외력과 안정적 점도에서 네트워크가 균형으로 복귀하는가?',
+    horizon: 120, seed: 101,
+    shocks: [{ start: 24, duration: 14, amplitude: 0.28, label: '완만한 위험선호', targets: { equity: 0.65, bonds: 0.2, globalDollar: -0.35 } }],
+    parameterOverrides: { viscosityEndogeneity: 0.25, hawkesExcitation: 0.08, policyBackstop: 0.12 },
+  },
+  {
+    id: 'covid-sudden-stop', name: '2020 팬데믹 Sudden Stop', period: '2020형', category: 'historical',
+    summary: '위험자산 매도와 달러 선호가 동시에 나타나고 정책 백스톱이 뒤따르는 충격입니다.',
+    researchQuestion: 'Hawkes 전염과 정책 대응이 최대 유출·회복시간을 얼마나 바꾸는가?',
+    horizon: 140, seed: 2020,
+    shocks: [
+      { start: 22, duration: 8, amplitude: 1.05, label: '팬데믹 위험회피', targets: { equity: -1, banks: -0.55, nbfi: -0.72, globalDollar: 0.82, reserves: 0.5 } },
+      { start: 35, duration: 18, amplitude: 0.5, label: '통화·재정 백스톱', targets: { equity: 0.45, bonds: 0.7, banks: 0.6, reserves: -0.45 } },
+    ],
+    parameterOverrides: { hawkesExcitation: 0.34, viscosityEndogeneity: 0.72, policyBackstop: 0.72 },
+  },
+  {
+    id: 'rate-dollar-shock', name: '2022 금리·달러 동시 충격', period: '2022형', category: 'historical',
+    summary: '글로벌 긴축이 채권·FX·부동산을 거쳐 은행과 비은행으로 전달되는 사례입니다.',
+    researchQuestion: '듀레이션 손실과 달러 외력이 교차할 때 어느 연결망이 병목이 되는가?',
+    horizon: 140, seed: 2022,
+    shocks: [
+      { start: 25, duration: 28, amplitude: 0.72, label: '글로벌 긴축', targets: { bonds: -0.72, krw: -0.7, realAssets: -0.52, globalDollar: 0.82 } },
+      { start: 42, duration: 12, amplitude: 0.44, label: '레버리지 디레버리징', targets: { nbfi: -0.8, banks: -0.35, reserves: 0.5 } },
+    ],
+    parameterOverrides: { leverageAmplification: 0.62, policyBackstop: 0.28, capitalControls: 0.04 },
+  },
+  {
+    id: 'fx-hedging-2025', name: '2025 관세·FX 헤징 재조정', period: '2025형', category: 'historical',
+    summary: '달러 익스포저 축소와 파생상품 헤징이 현물 매도를 일부 흡수하는 사례입니다.',
+    researchQuestion: '딜러 내부화와 깊은 FX 유동성이 충격 흡수장치로 작동하는가?',
+    horizon: 120, seed: 2025,
+    shocks: [{ start: 30, duration: 9, amplitude: 0.78, label: '관세 뉴스·달러 헤징', targets: { krw: -0.72, equity: -0.42, globalDollar: 0.62, reserves: 0.3 } }],
+    parameterOverrides: { networkDiffusion: 0.38, baseViscosity: 0.18, hawkesExcitation: 0.18, policyBackstop: 0.2 },
+    sourceLabel: 'BIS Quarterly Review, December 2025',
+    sourceUrl: 'https://www.bis.org/publ/qtrpdf/r_qt2512b.htm',
+  },
+  {
+    id: 'nbfi-sovereign-2026', name: '2026 NBFI·국채 증폭 위험', period: '2026 논점', category: 'stress',
+    summary: '국채 재가격화가 레버리지 비은행과 펀딩시장을 통해 증폭되는 최신 스트레스입니다.',
+    researchQuestion: '높은 공공부채·NBFI 레버리지가 유동성의 상태의존성을 얼마나 키우는가?',
+    horizon: 150, seed: 2026,
+    shocks: [
+      { start: 28, duration: 18, amplitude: 0.84, label: '국채 위험 프리미엄', targets: { bonds: -0.88, nbfi: -0.68, banks: -0.3, globalDollar: 0.6 } },
+      { start: 43, duration: 10, amplitude: 0.56, label: '마진콜·펀드 환매', targets: { nbfi: -1, equity: -0.48, reserves: 0.62 } },
+    ],
+    parameterOverrides: { leverageAmplification: 0.86, viscosityEndogeneity: 0.9, hawkesExcitation: 0.38, policyBackstop: 0.35 },
+    sourceLabel: 'BIS Annual Economic Report 2026',
+    sourceUrl: 'https://www.bis.org/publ/arpdf/ar2026e2.htm',
+  },
+  {
+    id: 'liquidity-freeze', name: '내생적 점도·유동성 동결', period: '반증 실험', category: 'stress',
+    summary: '스프레드·깊이를 결과가 아닌 지연 상태변수로 취급했을 때의 비선형 동결 사례입니다.',
+    researchQuestion: '고정 점도 모형보다 상태의존 점도가 위기 꼬리위험을 설명하는가?',
+    horizon: 150, seed: 77,
+    shocks: [{ start: 26, duration: 15, amplitude: 0.92, label: '복합 유동성 쇼크', targets: { equity: -0.82, nbfi: -0.9, banks: -0.45, krw: -0.65, globalDollar: 0.75, reserves: 0.55 } }],
+    parameterOverrides: { viscosityEndogeneity: 1.35, hawkesExcitation: 0.42, leverageAmplification: 0.78, policyBackstop: 0.08 },
+  },
+  {
+    id: 'targeted-backstop', name: '표적형 정책 백스톱', period: '정책 반사실', category: 'policy',
+    summary: '동일한 복합 충격에서 광범위한 부양 대신 유동성 병목만 표적으로 지원합니다.',
+    researchQuestion: '정책비용을 제한하면서 최대 유출과 회복시간을 함께 낮출 수 있는가?',
+    horizon: 150, seed: 77,
+    shocks: [{ start: 26, duration: 15, amplitude: 0.92, label: '복합 유동성 쇼크', targets: { equity: -0.82, nbfi: -0.9, banks: -0.45, krw: -0.65, globalDollar: 0.75, reserves: 0.55 } }],
+    parameterOverrides: { viscosityEndogeneity: 1.05, hawkesExcitation: 0.3, leverageAmplification: 0.62, policyBackstop: 0.82, capitalControls: 0.16 },
+  },
+];
 
-export const getInitialGameState = (): GameState => {
-  const initialSectors = JSON.parse(JSON.stringify(INITIAL_SECTORS_DATA));
-  const initialCapitalHistory: Record<string, number[]> = {};
-  initialSectors.forEach((sector: Sector) => {
-    // For a timeline starting at START_YEAR (time=0), initial capital is at history[0]
-    initialCapitalHistory[sector.id] = [sector.capital]; 
-  });
-  return {
-    time: 0, // Represents Q1 START_YEAR
-    sectors: initialSectors,
-    log: [],
-    capitalHistory: initialCapitalHistory,
-  };
-};
+export const PARAMETER_GROUPS = [
+  {
+    title: '유체·네트워크',
+    controls: [
+      { key: 'baseViscosity', label: '기준 점도 ν₀', min: 0.05, max: 0.8, step: 0.01 },
+      { key: 'viscosityEndogeneity', label: '점도 내생성 γν', min: 0, max: 1.8, step: 0.02 },
+      { key: 'pressureSensitivity', label: '압력 민감도 κp', min: 0.1, max: 1.5, step: 0.02 },
+      { key: 'crowdingElasticity', label: '쏠림 탄력성 κc', min: 0.1, max: 1.8, step: 0.02 },
+      { key: 'nonlinearAdvection', label: '비선형 이류 α', min: 0, max: 0.9, step: 0.01 },
+      { key: 'networkDiffusion', label: '네트워크 확산 D', min: 0, max: 0.8, step: 0.01 },
+    ],
+  },
+  {
+    title: '충격·전염',
+    controls: [
+      { key: 'shockScale', label: '충격 크기', min: 0, max: 2, step: 0.02 },
+      { key: 'shockDecay', label: '충격 감쇠 βf', min: 0.01, max: 0.2, step: 0.005 },
+      { key: 'hawkesExcitation', label: 'Hawkes 자기흥분 αH', min: 0, max: 0.47, step: 0.01 },
+      { key: 'hawkesDecay', label: 'Hawkes 감쇠 βH', min: 0.2, max: 0.9, step: 0.01 },
+      { key: 'leverageAmplification', label: '레버리지 증폭 λL', min: 0, max: 1.5, step: 0.02 },
+      { key: 'stochasticVolatility', label: '확률 변동 σ', min: 0, max: 0.08, step: 0.002 },
+    ],
+  },
+  {
+    title: '정책·마찰',
+    controls: [
+      { key: 'policyBackstop', label: '정책 백스톱 φ', min: 0, max: 1.2, step: 0.02 },
+      { key: 'capitalControls', label: '자본이동 마찰 χc', min: 0, max: 0.6, step: 0.01 },
+      { key: 'transactionFriction', label: '거래비용 χt', min: 0, max: 0.6, step: 0.01 },
+      { key: 'externalForceSensitivity', label: '외력 민감도 κf', min: 0.1, max: 1.5, step: 0.02 },
+    ],
+  },
+] as const;
