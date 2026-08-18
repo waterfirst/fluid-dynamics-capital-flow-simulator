@@ -1,0 +1,97 @@
+{
+  "generatedBy": "npm run experiments",
+  "modelVersion": "2.0.0",
+  "results": [
+    {
+      "scenarioId": "orderly-cycle",
+      "scenarioName": "질서 있는 글로벌 금융순환",
+      "peakOutflow": 1.7725713368726752,
+      "maxEquityDrawdown": 0.000186439715316844,
+      "peakStress": 0.18878307748813558,
+      "peakReynolds": 1.268987265959137,
+      "meanViscosity": 0.3238784340760693,
+      "recoveryStep": 1,
+      "hhiChange": 0.00017998159980170403,
+      "policyCost": 0.24034177010198746,
+      "massError": 3.637978807091713e-12
+    },
+    {
+      "scenarioId": "covid-sudden-stop",
+      "scenarioName": "2020 팬데믹 Sudden Stop",
+      "peakOutflow": 26.020345011211923,
+      "maxEquityDrawdown": 0.1752001744703744,
+      "peakStress": 0.5454928947373238,
+      "peakReynolds": 4.274547238044141,
+      "meanViscosity": 0.3398078997623878,
+      "recoveryStep": 111,
+      "hhiChange": 0.0005830378770225464,
+      "policyCost": 29.08139372937087,
+      "massError": 3.637978807091713e-12
+    },
+    {
+      "scenarioId": "rate-dollar-shock",
+      "scenarioName": "2022 금리·달러 동시 충격",
+      "peakOutflow": 21.748225363142836,
+      "maxEquityDrawdown": 0.09738311041490044,
+      "peakStress": 0.4892245395482032,
+      "peakReynolds": 4.65782176957138,
+      "meanViscosity": 0.34761269267917355,
+      "recoveryStep": 67,
+      "hhiChange": 0.0002057358753421168,
+      "policyCost": 12.276017770251046,
+      "massError": 0
+    },
+    {
+      "scenarioId": "fx-hedging-2025",
+      "scenarioName": "2025 관세·FX 헤징 재조정",
+      "peakOutflow": 15.533158862543747,
+      "maxEquityDrawdown": 0.13492788207166417,
+      "peakStress": 0.4082424166158142,
+      "peakReynolds": 3.673389816939585,
+      "meanViscosity": 0.24778582402568897,
+      "recoveryStep": 86,
+      "hhiChange": 0.0003015779384161199,
+      "policyCost": 2.8923570739708686,
+      "massError": 0
+    },
+    {
+      "scenarioId": "nbfi-sovereign-2026",
+      "scenarioName": "2026 NBFI·국채 증폭 위험",
+      "peakOutflow": 25.4143811628817,
+      "maxEquityDrawdown": 0.10590511810191305,
+      "peakStress": 0.43724998657611236,
+      "peakReynolds": 4.327957604638971,
+      "meanViscosity": 0.3653876977069395,
+      "recoveryStep": 94,
+      "hhiChange": -0.0006261377028131676,
+      "policyCost": 14.945981553833153,
+      "massError": 1.8189894035458565e-12
+    },
+    {
+      "scenarioId": "liquidity-freeze",
+      "scenarioName": "내생적 점도·유동성 동결",
+      "peakOutflow": 37.524902650626125,
+      "maxEquityDrawdown": 0.3572910103499023,
+      "peakStress": 0.8062115067268787,
+      "peakReynolds": 5.402865769432563,
+      "meanViscosity": 0.398842256022071,
+      "recoveryStep": null,
+      "hhiChange": 0.00025278607117665275,
+      "policyCost": 2.0450188576471082,
+      "massError": 5.4569682106375694e-12
+    },
+    {
+      "scenarioId": "targeted-backstop",
+      "scenarioName": "표적형 정책 백스톱",
+      "peakOutflow": 24.062096950572837,
+      "maxEquityDrawdown": 0.22251822940712818,
+      "peakStress": 0.5314634643865199,
+      "peakReynolds": 3.8153639152634953,
+      "meanViscosity": 0.3648289857749028,
+      "recoveryStep": null,
+      "hhiChange": 0.00019469187243115194,
+      "policyCost": 20.96144329088286,
+      "massError": 1.8189894035458565e-12
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Fluid Dynamics Capital Flow Simulator",
-  "description": "A React web application that simulates capital movement between market sectors using fluid dynamics principles. Visualizes capital distribution and logs significant market events.",
+  "name": "Navier–Stokes Capital Flow Lab",
+  "description": "A research-grade React and Three.js laboratory for state-dependent capital-flow, liquidity-shock, and policy-counterfactual experiments.",
   "requestFramePermissions": []
 }
